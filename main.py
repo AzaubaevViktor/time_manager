@@ -19,11 +19,13 @@ class Modifier:
 
 
 class Interval:
-    def __init__(self, modify: Modifier):
+    def __init__(self, modify: Modifier = None):
+        modify = modify or 0
         self.start = time() + int(modify)
         self.end = None
 
-    def end(self, modify: Modifier):
+    def stop(self, modify: Modifier = None):
+        modify = modify or 0
         self.end = time() + int(modify)
 
 
@@ -51,12 +53,17 @@ class Task:
     def load(cls, raw_data) -> dict:
         pass
 
+    def __str__(self):
+        return f"{self.name} ({self.decsriiption})"
+
 # ======= MAIN CYCLE ========
 
 
 class TimeManager:
     def __init__(self):
         self._running = True
+        self.root = Task(None, "/")
+
         self.funcs = {
             attr: getattr(self, attr)
             for attr
@@ -65,11 +72,43 @@ class TimeManager:
         }
         del self.funcs['run']
 
+        self.cur_task: Task = self.root
+        self.cur_interval: Interval = Interval()
+
     def test(self, *args):
         print("Test function")
         print(f"Arguments: {args}")
 
     test.description = "Just test function"
+
+    def start(self, *args):
+        self.stop()
+        if len(args) == 0:
+            print("! Введите имя задачи")
+
+        task = self.root
+        for arg in args:
+            task = task[arg]
+        self.cur_task = task
+
+        self.cur_interval = Interval()
+
+    def stop(self, *args):
+        interval = self.cur_interval
+        interval.stop()
+        self.cur_task += interval
+
+        self.cur_task = self.root
+        self.cur_interval = Interval()
+
+    def ls(self, *args):
+        task = self.root
+        for arg in args:
+            task = task[arg]
+
+        print(task)
+        for task in task.childs.values():
+            print(f"  {task}")
 
     def exit(self, *args):
         print("Bye!")
@@ -84,10 +123,10 @@ class TimeManager:
 
     def run(self):
         while self._running:
-            try:
-                self._cycle()
-            except Exception:
-                print_exc()
+            # try:
+            self._cycle()
+            # except Exception:
+            #     print_exc()
 
     def _cycle(self):
         a = input("> ")
